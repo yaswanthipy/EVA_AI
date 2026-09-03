@@ -16,6 +16,9 @@ const [isRecording, setIsRecording] = useState(false);
 const recognitionRef = useRef(null);
 const [answers, setAnswers] = useState([]);
 
+const [evaluations, setEvaluations] = useState([]);
+const [isEvaluating, setIsEvaluating] = useState(false);
+
 useEffect(() => {
   if (screen !== "interview") {
     return;
@@ -86,529 +89,815 @@ if (interviewFocus === "Technical") {
 
 const currentQuestion = filteredQuestions[questionIndex];
 
-  if (screen === "setup") {
-    return (
-      <div className="setup-page">
-        <div className="setup-container">
+if (screen === "setup") {
+  return (
+    <div className="setup-page">
+      <div className="setup-container">
+
+        <button
+          className="back-button"
+          onClick={() => setScreen("home")}
+        >
+          ← Back
+        </button>
+
+        <div className="setup-header">
+          <div className="badge">
+            ✦ Interview Setup
+          </div>
+
+          <h1>
+            Let's prepare your
+            <span> interview.</span>
+          </h1>
+
+          <p>
+            Configure your interview before meeting
+            your EVA AI panel.
+          </p>
+        </div>
+
+        <div className="setup-card">
+
+          <div className="setup-group">
+            <label>Job Role</label>
+
+            <select
+              value={jobRole}
+              onChange={(e) => setJobRole(e.target.value)}
+            >
+              <option>Software Engineer</option>
+              <option>Frontend Developer</option>
+              <option>Backend Developer</option>
+              <option>Full Stack Developer</option>
+              <option>Data Analyst</option>
+              <option>Product Manager</option>
+            </select>
+          </div>
+
+          <div className="setup-group">
+            <label>Experience Level</label>
+
+            <select
+              value={experienceLevel}
+              onChange={(e) =>
+                setExperienceLevel(e.target.value)
+              }
+            >
+              <option>Fresher</option>
+              <option>0 - 2 Years</option>
+              <option>2 - 5 Years</option>
+              <option>5+ Years</option>
+            </select>
+          </div>
+
+          <div className="setup-group">
+            <label>Interview Focus</label>
+
+            <div className="focus-options">
+
+              <button
+                className={`focus-option ${
+                  interviewFocus === "Full Interview"
+                    ? "selected"
+                    : ""
+                }`}
+                onClick={() =>
+                  setInterviewFocus("Full Interview")
+                }
+              >
+                <span>🎯</span>
+
+                <div>
+                  <strong>Full Interview</strong>
+                  <small>
+                    HR + Technical + Product
+                  </small>
+                </div>
+              </button>
+
+              <button
+                className={`focus-option ${
+                  interviewFocus === "Technical"
+                    ? "selected"
+                    : ""
+                }`}
+                onClick={() =>
+                  setInterviewFocus("Technical")
+                }
+              >
+                <span>💻</span>
+
+                <div>
+                  <strong>Technical</strong>
+                  <small>
+                    Technical skills & problem solving
+                  </small>
+                </div>
+              </button>
+
+              <button
+                className={`focus-option ${
+                  interviewFocus === "HR"
+                    ? "selected"
+                    : ""
+                }`}
+                onClick={() =>
+                  setInterviewFocus("HR")
+                }
+              >
+                <span>👩‍💼</span>
+
+                <div>
+                  <strong>HR</strong>
+                  <small>
+                    Communication & behavioral skills
+                  </small>
+                </div>
+              </button>
+
+            </div>
+          </div>
+
+          <div className="setup-group">
+            <label>Interview Duration</label>
+
+            <div className="duration-options">
+
+              <button
+                className={`duration ${
+                  duration === "10 min"
+                    ? "selected"
+                    : ""
+                }`}
+                onClick={() =>
+                  setDuration("10 min")
+                }
+              >
+                10 min
+              </button>
+
+              <button
+                className={`duration ${
+                  duration === "20 min"
+                    ? "selected"
+                    : ""
+                }`}
+                onClick={() =>
+                  setDuration("20 min")
+                }
+              >
+                20 min
+              </button>
+
+              <button
+                className={`duration ${
+                  duration === "30 min"
+                    ? "selected"
+                    : ""
+                }`}
+                onClick={() =>
+                  setDuration("30 min")
+                }
+              >
+                30 min
+              </button>
+
+            </div>
+          </div>
 
           <button
-            className="back-button"
-            onClick={() => setScreen("home")}
+            className="primary-button setup-start"
+            onClick={() => {
+
+              setQuestionIndex(0);
+              setAnswer("");
+              setSubmitted(false);
+              setAnswers([]);
+              setEvaluations([]);
+
+              if (duration === "10 min") {
+                setTimeLeft(600);
+              } else if (duration === "20 min") {
+                setTimeLeft(1200);
+              } else if (duration === "30 min") {
+                setTimeLeft(1800);
+              }
+
+              setScreen("interview");
+            }}
           >
-            ← Back
+            🎙️ Start EVA Interview →
           </button>
 
-          <div className="setup-header">
-            <div className="badge">
-              ✦ Interview Setup
-            </div>
-
-            <h1>
-              Let's prepare your
-              <span> interview.</span>
-            </h1>
-
-            <p>
-              Configure your interview before meeting
-              your EVA AI panel.
-            </p>
-          </div>
-
-          <div className="setup-card">
-
-            <div className="setup-group">
-              <label>Job Role</label>
-
-              <select
-                value={jobRole}
-                onChange={(e) => setJobRole(e.target.value)}
-              >
-                <option>Software Engineer</option>
-                <option>Frontend Developer</option>
-                <option>Backend Developer</option>
-                <option>Full Stack Developer</option>
-                <option>Data Analyst</option>
-                <option>Product Manager</option>
-              </select>
-            </div>
-
-            <div className="setup-group">
-              <label>Experience Level</label>
-
-              <select
-                value={experienceLevel}
-                onChange={(e) => setExperienceLevel(e.target.value)}
-              >
-                <option>Fresher</option>
-                <option>0 - 2 Years</option>
-                <option>2 - 5 Years</option>
-                <option>5+ Years</option>
-              </select>
-            </div>
-
-            <div className="setup-group">
-              <label>Interview Focus</label>
-
-              <div className="focus-options">
-
-                <button
-  className={`focus-option ${
-    interviewFocus === "Full Interview" ? "selected" : ""
-  }`}
-  onClick={() => setInterviewFocus("Full Interview")}
->
-                  <span>🎯</span>
-                  <div>
-                    <strong>Full Interview</strong>
-                    <small>HR + Technical + Product</small>
-                  </div>
-                </button>
-
-                <button
-                  className={`focus-option ${
-                    interviewFocus === "Technical" ? "selected" : ""
-                  }`}
-                  onClick={() => setInterviewFocus("Technical")}
-                >
-                  <span>💻</span>
-                  <div>
-                    <strong>Technical</strong>
-                    <small>Technical skills & problem solving</small>
-                  </div>
-                </button>
-
-                <button
-                  className={`focus-option ${
-                    interviewFocus === "HR" ? "selected" : ""
-                  }`}
-                  onClick={() => setInterviewFocus("HR")}
-                >
-                  <span>👩‍💼</span>
-                  <div>
-                    <strong>HR</strong>
-                    <small>Communication & behavioral skills</small>
-                  </div>
-                </button>
-
-              </div>
-            </div>
-
-            <div className="setup-group">
-  <label>Interview Duration</label>
-
-  <div className="duration-options">
-
-    <button
-      className={`duration ${
-        duration === "10 min" ? "selected" : ""
-      }`}
-      onClick={() => setDuration("10 min")}
-    >
-      10 min
-    </button>
-
-    <button
-      className={`duration ${
-        duration === "20 min" ? "selected" : ""
-      }`}
-      onClick={() => setDuration("20 min")}
-    >
-      20 min
-    </button>
-
-    <button
-      className={`duration ${
-        duration === "30 min" ? "selected" : ""
-      }`}
-      onClick={() => setDuration("30 min")}
-    >
-      30 min
-    </button>
-
-  </div>
-</div>
-
-            
-          <button
-  className="primary-button setup-start"
-  onClick={() => {
-  setQuestionIndex(0);
-  setAnswer("");
-  setSubmitted(false);
-  setAnswers([]);
-
-  if (duration === "10 min") {
-    setTimeLeft(600);
-  } else if (duration === "20 min") {
-    setTimeLeft(1200);
-  } else if (duration === "30 min") {
-    setTimeLeft(1800);
-  }
-
-  setScreen("interview");
-}}
->
-  🎙️ Start EVA Interview →
-</button>
-
-          </div>
-
-          <div className="setup-note">
-            💡 EVA will adapt the interview based on your answers.
-          </div>
-
         </div>
+
+        <div className="setup-note">
+          💡 EVA will adapt the interview based on your answers.
+        </div>
+
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (screen === "interview") {
-    const minutes = Math.floor(timeLeft / 60);
-const seconds = timeLeft % 60;
+if (screen === "interview") {
 
-const formattedTime = `${String(minutes).padStart(2, "0")}:${String(
-  seconds
-).padStart(2, "0")}`;
-   const handleSubmit = () => {
-  if (answer.trim() === "") {
-    return;
-  }
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
 
-  setIsRecording(false);
+  const formattedTime = `${String(minutes).padStart(
+    2,
+    "0"
+  )}:${String(seconds).padStart(2, "0")}`;
 
-  const newAnswer = {
-    question: currentQuestion.question,
-    interviewer: currentQuestion.interviewer,
-    role: currentQuestion.role,
-    answer: answer.trim(),
-  };
+  const handleSubmit = async () => {
 
-  setAnswers((previousAnswers) => {
-    const updatedAnswers = [...previousAnswers];
-
-    updatedAnswers[questionIndex] = newAnswer;
-
-    return updatedAnswers;
-  });
-
-  setSubmitted(true);
-};
-
-    const handleNext = () => {
-  if (questionIndex < filteredQuestions.length - 1) {
-    setQuestionIndex(questionIndex + 1);
-    setAnswer("");
-    setSubmitted(false);
-    setIsRecording(false);
-  } else {
-    setScreen("results");
-    setQuestionIndex(0);
-    setAnswer("");
-    setSubmitted(false);
-    setIsRecording(false);
-  }
-};
-const toggleRecording = () => {
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  if (!SpeechRecognition) {
-    alert(
-      "Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge."
-    );
-    return;
-  }
-
-  if (isRecording) {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+    if (answer.trim() === "") {
+      return;
     }
 
     setIsRecording(false);
-    return;
-  }
+    setIsEvaluating(true);
 
-  const recognition = new SpeechRecognition();
+    const newAnswer = {
+      question: currentQuestion.question,
+      interviewer: currentQuestion.interviewer,
+      role: currentQuestion.role,
+      answer: answer.trim(),
+    };
 
-  recognition.lang = "en-US";
-  recognition.continuous = false;
-  recognition.interimResults = false;
+    setAnswers((previousAnswers) => {
+      const updatedAnswers = [...previousAnswers];
 
-  recognition.onstart = () => {
-    setIsRecording(true);
-  };
+      updatedAnswers[questionIndex] = newAnswer;
 
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
+      return updatedAnswers;
+    });
 
-    setAnswer((previousAnswer) => {
-      if (previousAnswer.trim() === "") {
-        return transcript;
+    try {
+
+      // Send answer to backend
+      const answerResponse = await fetch(
+        "http://127.0.0.1:8000/interview/answer",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            question_id: questionIndex,
+            answer: answer.trim(),
+          }),
+        }
+      );
+
+      if (!answerResponse.ok) {
+        throw new Error(
+          "Failed to submit answer"
+        );
       }
 
-      return `${previousAnswer} ${transcript}`;
-    });
+      // Evaluate answer
+      const evaluationResponse = await fetch(
+        "http://127.0.0.1:8000/evaluate",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            question_id: questionIndex,
+            question: currentQuestion.question,
+            answer: answer.trim(),
+          }),
+        }
+      );
+
+      if (!evaluationResponse.ok) {
+        throw new Error(
+          "Failed to evaluate answer"
+        );
+      }
+
+      const evaluation =
+        await evaluationResponse.json();
+
+      console.log(
+        "Evaluation received:",
+        evaluation
+      );
+
+      setEvaluations((previousEvaluations) => {
+
+        const updatedEvaluations = [
+          ...previousEvaluations,
+        ];
+
+        updatedEvaluations[questionIndex] =
+          evaluation;
+
+        return updatedEvaluations;
+      });
+
+      setSubmitted(true);
+
+    } catch (error) {
+
+      console.error(
+        "Backend connection error:",
+        error
+      );
+
+      alert(
+        "Could not connect to the EVA backend. Make sure the FastAPI server is running."
+      );
+
+    } finally {
+
+      setIsEvaluating(false);
+    }
   };
 
-  recognition.onerror = (event) => {
-    console.error("Speech recognition error:", event.error);
-    setIsRecording(false);
+  const handleNext = () => {
+
+    if (
+      questionIndex <
+      filteredQuestions.length - 1
+    ) {
+
+      setQuestionIndex(
+        questionIndex + 1
+      );
+
+      setAnswer("");
+      setSubmitted(false);
+      setIsRecording(false);
+
+    } else {
+
+      setScreen("results");
+
+      setQuestionIndex(0);
+      setAnswer("");
+      setSubmitted(false);
+      setIsRecording(false);
+    }
   };
 
-  recognition.onend = () => {
-    setIsRecording(false);
+  const toggleRecording = () => {
+
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+
+      alert(
+        "Speech recognition is not supported in this browser. Please use Google Chrome or Microsoft Edge."
+      );
+
+      return;
+    }
+
+    if (isRecording) {
+
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+
+      setIsRecording(false);
+
+      return;
+    }
+
+    const recognition =
+      new SpeechRecognition();
+
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+    };
+
+    recognition.onresult = (event) => {
+
+      const transcript =
+        event.results[0][0].transcript;
+
+      setAnswer((previousAnswer) => {
+
+        if (previousAnswer.trim() === "") {
+          return transcript;
+        }
+
+        return `${previousAnswer} ${transcript}`;
+      });
+    };
+
+    recognition.onerror = (event) => {
+
+      console.error(
+        "Speech recognition error:",
+        event.error
+      );
+
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    recognition.start();
   };
 
-  recognitionRef.current = recognition;
-  recognition.start();
-};
+  return (
+    <div className="interview-page">
 
-    return (
-      <div className="interview-page">
+      {/* Top Bar */}
 
-        {/* Top Bar */}
-        <div className="interview-topbar">
+      <div className="interview-topbar">
 
-          <div className="logo">
-            <span className="logo-icon">E</span>
-            <span>EVA</span>
-          </div>
+        <div className="logo">
+          <span className="logo-icon">E</span>
+          <span>EVA</span>
+        </div>
 
-          <div className="interview-status">
-  <span className="status-dot"></span>
-  Interview in progress
-  <span className="interview-timer">
-    ⏱️ {formattedTime}
-  </span>
-</div>
+        <div className="interview-status">
 
-          <button
-            className="nav-button"
-            onClick={() => setScreen("home")}
-          >
-            Exit Interview
-          </button>
+          <span className="status-dot"></span>
+
+          Interview in progress
+
+          <span className="interview-timer">
+            ⏱️ {formattedTime}
+          </span>
 
         </div>
 
-        {/* Interview Area */}
-        <div className="interview-container">
+        <button
+          className="nav-button"
+          onClick={() =>
+            setScreen("home")
+          }
+        >
+          Exit Interview
+        </button>
 
-          <div className="question-section">
+      </div>
 
-            <span className="question-label">
-              CURRENT INTERVIEWER
+      {/* Interview Area */}
+
+      <div className="interview-container">
+
+        <div className="question-section">
+
+          <span className="question-label">
+            CURRENT INTERVIEWER
+          </span>
+
+          <div className="current-interviewer">
+
+            <div className="large-avatar">
+              {currentQuestion.avatar}
+            </div>
+
+            <div>
+              <h2>
+                {currentQuestion.interviewer}
+              </h2>
+
+              <p>
+                {currentQuestion.role}
+              </p>
+            </div>
+
+          </div>
+
+          {/* Question */}
+
+          <div className="question-card">
+
+            <span>
+              Question {questionIndex + 1} of{" "}
+              {filteredQuestions.length}
             </span>
 
-            <div className="current-interviewer">
+            <h1>
+              {currentQuestion.question}
+            </h1>
 
-              <div className="large-avatar">
-                {currentQuestion.avatar}
-              </div>
+            <p>
+              Take a moment to think about your answer.
+              Speak naturally and clearly.
+            </p>
 
-              <div>
-                <h2>{currentQuestion.interviewer}</h2>
-                <p>{currentQuestion.role}</p>
-              </div>
+          </div>
+
+          {/* Answer */}
+
+          <div className="answer-area">
+
+            <textarea
+              value={answer}
+              onChange={(e) =>
+                setAnswer(e.target.value)
+              }
+              placeholder="Type your answer here..."
+              disabled={submitted}
+            />
+
+            <div className="voice-controls">
+
+              <button
+                type="button"
+                className={`mic-button ${
+                  isRecording
+                    ? "recording"
+                    : ""
+                }`}
+                onClick={toggleRecording}
+                disabled={submitted}
+              >
+                {isRecording
+                  ? "⏹️"
+                  : "🎙️"}
+              </button>
+
+              <span>
+                {isRecording
+                  ? "EVA is listening..."
+                  : "Click the microphone to answer by voice"}
+              </span>
 
             </div>
 
-            {/* Question */}
-            <div className="question-card">
+            {!submitted ? (
 
-              <span>
-                Question {questionIndex + 1} of {filteredQuestions.length}
-              </span>
+              <button
+                className="primary-button submit-button"
+                onClick={handleSubmit}
+                disabled={isEvaluating}
+              >
+                {isEvaluating
+                  ? "EVA is evaluating..."
+                  : "Submit Answer →"}
+              </button>
 
-              <h1>
-                {currentQuestion.question}
-              </h1>
+            ) : (
+
+              <div className="feedback-box">
+
+                <div className="feedback-title">
+                  🧠 EVA AI Evaluation
+                </div>
+
+                <div className="evaluation-score">
+                  Score:{" "}
+                  {evaluations[
+                    questionIndex
+                  ]?.score ?? "--"}
+                  /10
+                </div>
+
+                <p>
+                  {evaluations[
+                    questionIndex
+                  ]?.feedback ||
+                    "EVA has evaluated your response."}
+                </p>
+
+                <button
+                  className="primary-button"
+                  onClick={handleNext}
+                >
+                  {questionIndex <
+                  filteredQuestions.length - 1
+                    ? "Next Question →"
+                    : "Finish Interview →"}
+                </button>
+
+              </div>
+            )}
+
+          </div>
+
+          <p className="voice-hint">
+            🎙️ Voice interaction is enabled.
+          </p>
+
+        </div>
+
+        {/* AI Panel */}
+
+        <div className="live-panel">
+
+          <div className="panel-header">
+
+            <span>
+              AI Interview Panel
+            </span>
+
+            <span className="live-badge">
+              LIVE
+            </span>
+
+          </div>
+
+          {/* HR Interviewer */}
+
+          <div
+            className={`interviewer-card ${
+              currentQuestion.interviewer ===
+              "HR Interviewer"
+                ? "active"
+                : ""
+            }`}
+          >
+
+            <div className="avatar">
+              👩‍💼
+            </div>
+
+            <div className="interviewer-info">
+
+              <h3>
+                HR Interviewer
+              </h3>
 
               <p>
-                Take a moment to think about your answer.
-                Speak naturally and clearly.
+                {currentQuestion.interviewer ===
+                "HR Interviewer"
+                  ? "Currently interviewing"
+                  : "Listening"}
               </p>
 
             </div>
 
-            {/* Answer */}
-            <div className="answer-area">
+          </div>
 
-              <textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type your answer here..."
-                disabled={submitted}
-              />
-              <div className="voice-controls">
+          {/* Technical Interviewer */}
 
-  <button
-  type="button"
-  className={`mic-button ${isRecording ? "recording" : ""}`}
-  onClick={toggleRecording}
-  disabled={submitted}
->
-  {isRecording ? "⏹️" : "🎙️"}
-</button>
+          <div
+            className={`interviewer-card ${
+              currentQuestion.interviewer ===
+              "Technical Interviewer"
+                ? "active"
+                : ""
+            }`}
+          >
 
-  <span>
-    {isRecording
-      ? "EVA is listening..."
-      : "Click the microphone to answer by voice"}
-  </span>
+            <div className="avatar">
+              👨‍💻
+            </div>
 
-</div>
+            <div className="interviewer-info">
 
-              {!submitted ? (
-                <button
-                  className="primary-button submit-button"
-                  onClick={handleSubmit}
-                >
-                  Submit Answer →
-                </button>
-              ) : (
-                <div className="feedback-box">
+              <h3>
+                Technical Interviewer
+              </h3>
 
-                  <div className="feedback-title">
-                    🧠 EVA Quick Analysis
-                  </div>
-
-                  <p>
-                    Good attempt! EVA has recorded your response
-                    and is ready to continue the interview.
-                  </p>
-
-                  <button
-                    className="primary-button"
-                    onClick={handleNext}
-                  >
-                    {questionIndex < filteredQuestions.length - 1
-                      ? "Next Question →"
-                      : "Finish Interview →"}
-                  </button>
-
-                </div>
-              )}
+              <p>
+                {currentQuestion.interviewer ===
+                "Technical Interviewer"
+                  ? "Currently interviewing"
+                  : "Listening"}
+              </p>
 
             </div>
 
-            <p className="voice-hint">
-              🎙️ Voice interaction will be connected in the next stage.
-            </p>
+          </div>
+
+          {/* Product Manager */}
+
+          <div
+            className={`interviewer-card ${
+              currentQuestion.interviewer ===
+              "Product Manager"
+                ? "active"
+                : ""
+            }`}
+          >
+
+            <div className="avatar">
+              👨‍💼
+            </div>
+
+            <div className="interviewer-info">
+
+              <h3>
+                Product Manager
+              </h3>
+
+              <p>
+                {currentQuestion.interviewer ===
+                "Product Manager"
+                  ? "Currently interviewing"
+                  : "Listening"}
+              </p>
+
+            </div>
 
           </div>
 
-        {/* AI Panel */}
-<div className="live-panel">
+          {/* Shared Context */}
 
-  <div className="panel-header">
-    <span>AI Interview Panel</span>
-    <span className="live-badge">LIVE</span>
-  </div>
+          <div className="context-box">
 
+            <span>🧠</span>
 
-  {/* HR Interviewer */}
-  <div
-    className={`interviewer-card ${
-      currentQuestion.interviewer === "HR Interviewer"
-        ? "active"
-        : ""
-    }`}
-  >
+            <div>
 
-    <div className="avatar">
-      👩‍💼
-    </div>
+              <strong>
+                Shared Context
+              </strong>
 
-    <div className="interviewer-info">
-      <h3>HR Interviewer</h3>
+              <p>
+                All interviewers understand
+                the conversation so far.
+              </p>
 
-      <p>
-        {currentQuestion.interviewer === "HR Interviewer"
-          ? "Currently interviewing"
-          : "Listening"}
-      </p>
-    </div>
+            </div>
 
-  </div>
-
-
-  {/* Technical Interviewer */}
-  <div
-    className={`interviewer-card ${
-      currentQuestion.interviewer === "Technical Interviewer"
-        ? "active"
-        : ""
-    }`}
-  >
-
-    <div className="avatar">
-      👨‍💻
-    </div>
-
-    <div className="interviewer-info">
-      <h3>Technical Interviewer</h3>
-
-      <p>
-        {currentQuestion.interviewer === "Technical Interviewer"
-          ? "Currently interviewing"
-          : "Listening"}
-      </p>
-    </div>
-
-  </div>
-
-
-  {/* Product Manager */}
-  <div
-    className={`interviewer-card ${
-      currentQuestion.interviewer === "Product Manager"
-        ? "active"
-        : ""
-    }`}
-  >
-
-    <div className="avatar">
-      👨‍💼
-    </div>
-
-    <div className="interviewer-info">
-      <h3>Product Manager</h3>
-
-      <p>
-        {currentQuestion.interviewer === "Product Manager"
-          ? "Currently interviewing"
-          : "Listening"}
-      </p>
-    </div>
-
-  </div>
-
-
-  {/* Shared Context */}
-  <div className="context-box">
-
-    <span>🧠</span>
-
-    <div>
-      <strong>Shared Context</strong>
-
-      <p>
-        All interviewers understand the
-        conversation so far.
-      </p>
-    </div>
-
-  </div>
-
-</div>
-            
-  </div>
+          </div>
 
         </div>
 
-    );
-  }  if (screen === "results") {
+      </div>
+
+    </div>
+  );
+}
+
+  if (screen === "results") {
+    const validEvaluations = evaluations.filter(
+  (evaluation) => evaluation && typeof evaluation.score === "number"
+);
+
+const totalScore = validEvaluations.reduce(
+  (sum, evaluation) => sum + evaluation.score,
+  0
+);
+
+const overallScore =
+  validEvaluations.length > 0
+    ? Math.round((totalScore / validEvaluations.length) * 10)
+    : 0;
+
+    const getAverageScore = (interviewerNames) => {
+  const matchingScores = answers
+    .map((item, index) => {
+      const evaluation = evaluations[index];
+
+      if (
+        evaluation &&
+        typeof evaluation.score === "number" &&
+        interviewerNames.includes(item?.interviewer)
+      ) {
+        return evaluation.score;
+      }
+
+      return null;
+    })
+    .filter((score) => score !== null);
+
+  if (matchingScores.length === 0) {
+    return 0;
+  }
+
+  const average =
+    matchingScores.reduce((sum, score) => sum + score, 0) /
+    matchingScores.length;
+
+  return Math.round(average * 10);
+};
+
+const hrScore = getAverageScore(["HR Interviewer"]);
+const technicalScore = getAverageScore(["Technical Interviewer"]);
+const productScore = getAverageScore(["Product Manager"]);
+
+const communicationScore = hrScore;
+
+const technicalKnowledgeScore = technicalScore;
+
+const problemSolvingScore =
+  technicalScore > 0 && productScore > 0
+    ? Math.round((technicalScore + productScore) / 2)
+    : technicalScore || productScore;
+
+const confidenceScore =
+  hrScore > 0 && productScore > 0
+    ? Math.round((hrScore + productScore) / 2)
+    : hrScore || productScore;
     return (
       <div className="results-page">
 
@@ -665,7 +954,7 @@ const toggleRecording = () => {
           <div className="overall-score-card">
 
             <div className="score-circle">
-              <strong>82</strong>
+              <strong>{overallScore}</strong>
               <span>/ 100</span>
             </div>
 
@@ -697,7 +986,7 @@ const toggleRecording = () => {
 
               <div className="score-card-top">
                 <span>🗣️</span>
-                <strong>85%</strong>
+                <strong>{communicationScore}%</strong>
               </div>
 
               <h3>
@@ -715,7 +1004,7 @@ const toggleRecording = () => {
 
               <div className="score-card-top">
                 <span>💻</span>
-                <strong>78%</strong>
+                <strong>{technicalKnowledgeScore}%</strong>
               </div>
 
               <h3>
@@ -733,7 +1022,7 @@ const toggleRecording = () => {
 
               <div className="score-card-top">
                 <span>🧠</span>
-                <strong>84%</strong>
+                <strong>{problemSolvingScore}%</strong>
               </div>
 
               <h3>
@@ -751,7 +1040,7 @@ const toggleRecording = () => {
 
               <div className="score-card-top">
                 <span>🎯</span>
-                <strong>80%</strong>
+                <strong>{confidenceScore}%</strong>
               </div>
 
               <h3>
@@ -768,73 +1057,103 @@ const toggleRecording = () => {
 
 
           {/* AI Feedback */}
-          <div className="evaluation-card">
+          {/* AI Feedback */}
+<div className="evaluation-card">
 
-            <div className="evaluation-header">
+  <div className="evaluation-header">
 
-              <div>
-                <span className="question-label">
-                  AI FEEDBACK
-                </span>
+    <div>
+      <span className="question-label">
+        AI FEEDBACK
+      </span>
 
-                <h2>
-                  EVA's Interview Insights
-                </h2>
-              </div>
+      <h2>
+        EVA's Interview Insights
+      </h2>
+    </div>
 
-              <span className="evaluation-brain">
-                🧠
-              </span>
+    <span className="evaluation-brain">
+      🧠
+    </span>
 
-            </div>
+  </div>
 
+  <div className="feedback-columns">
 
-            <div className="feedback-columns">
+    <div className="feedback-column">
 
-              <div className="feedback-column">
+      <h3>
+        💬 Your AI Evaluations
+      </h3>
 
-                <h3>
-                  ✅ Strengths
-                </h3>
+      {evaluations.length === 0 ? (
 
-                <p>
-                  • Clear communication
-                </p>
+        <p>
+          No evaluation feedback is available yet.
+        </p>
 
-                <p>
-                  • Good problem-solving approach
-                </p>
+      ) : (
 
-                <p>
-                  • Professional responses
-                </p>
+        evaluations.map((evaluation, index) => {
 
-              </div>
+          if (!evaluation) {
+            return null;
+          }
 
+          return (
+            <div
+              key={index}
+              className="result-feedback-item"
+            >
 
-              <div className="feedback-column">
+              <strong>
+                Question {index + 1}
+              </strong>
 
-                <h3>
-                  ⚠️ Areas to Improve
-                </h3>
-
-                <p>
-                  • Give more detailed technical explanations
-                </p>
-
-                <p>
-                  • Support answers with examples
-                </p>
-
-                <p>
-                  • Be more specific when describing achievements
-                </p>
-
-              </div>
+              <p>
+                {evaluation.feedback ||
+                  "No feedback provided by EVA."}
+              </p>
 
             </div>
+          );
+        })
 
-          </div>
+      )}
+
+    </div>
+
+    <div className="feedback-column">
+
+      <h3>
+        📊 Performance Summary
+      </h3>
+
+      <p>
+        You completed {validEvaluations.length}{" "}
+        evaluated question
+        {validEvaluations.length === 1
+          ? ""
+          : "s"}.
+      </p>
+
+      <p>
+        Your overall interview score is{" "}
+        <strong>{overallScore}/100</strong>.
+      </p>
+
+      <p>
+        EVA used your actual interview responses
+        to generate these evaluations.
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+
+            
 
 
 <div className="evaluation-card">
@@ -1281,5 +1600,6 @@ const toggleRecording = () => {
     </div>
   );
 }
+
 
 export default App;

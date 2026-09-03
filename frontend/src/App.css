@@ -946,3 +946,26 @@
 .no-answers {
   color: #9ca3af;
 }
+.evaluation-score {
+  margin: 12px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #a78bfa;
+}
+.result-feedback-item {
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.result-feedback-item:last-child {
+  border-bottom: none;
+}
+
+.result-feedback-item strong {
+  color: #c4b5fd;
+  font-size: 14px;
+}
+
+.result-feedback-item p {
+  margin: 8px 0 0;
+}

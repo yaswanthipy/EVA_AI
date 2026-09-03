@@ -1,11 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from interview import router as interview_router
+from evaluator import evaluate_answer as evaluate_answer_logic
 
 app = FastAPI(
     title="EVA API",
     description="Enhanced Voice-based AI Interviewer",
     version="1.0.0"
+)
+app.include_router(
+    interview_router,
+    prefix="/interview",
+    tags=["Interview"]
 )
 
 app.add_middleware(
@@ -18,32 +25,23 @@ app.add_middleware(
 
 
 class AnswerRequest(BaseModel):
-    answer: str
+    question_id: int
     question: str
-
+    answer: str
 
 @app.post("/evaluate")
 def evaluate_answer(data: AnswerRequest):
 
-    answer_length = len(data.answer.strip())
-
-    if answer_length < 20:
-        feedback = "Your answer is a little short. Try adding more details or an example."
-        score = 5
-
-    elif answer_length < 80:
-        feedback = "Good start. Your answer could be stronger with a specific example."
-        score = 7
-
-    else:
-        feedback = "Good answer. You provided enough detail to demonstrate your thinking."
-        score = 9
+    result = evaluate_answer_logic(data.answer)
 
     return {
-        "score": score,
-        "feedback": feedback,
-        "question": data.question
+        "question_id": data.question_id,
+        "question": data.question,
+        "answer": data.answer,
+        "score": result["score"],
+        "feedback": result["feedback"]
     }
+
 
 
 @app.get("/")

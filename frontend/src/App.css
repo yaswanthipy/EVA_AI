@@ -969,3 +969,12 @@
 .result-feedback-item p {
   margin: 8px 0 0;
 }
+.voice-interview-control {
+  margin-bottom: 18px;
+}
+
+.voice-error {
+  margin-top: 10px;
+  color: #fca5a5;
+  font-size: 14px;
+}

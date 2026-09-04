@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState } from "react";
+import AgoraRTC from "agora-rtc-sdk-ng";
 import "./App.css";
 
 function App() {
 const [screen, setScreen] = useState("home");
+const [agoraClient, setAgoraClient] = useState(null);
+const [agoraJoined, setAgoraJoined] = useState(false);
+const [agoraAgentId, setAgoraAgentId] = useState(null);
+const agoraClientRef = useRef(null);
+const agoraMicrophoneTrackRef = useRef(null);
+
+const [isVoiceConnected, setIsVoiceConnected] = useState(false);
+const [isVoiceConnecting, setIsVoiceConnecting] = useState(false);
+const [voiceError, setVoiceError] = useState("");
+
 const [questionIndex, setQuestionIndex] = useState(0);
 const [answer, setAnswer] = useState("");
 const [submitted, setSubmitted] = useState(false);
@@ -38,6 +49,22 @@ useEffect(() => {
 
   return () => clearInterval(timer);
 }, [screen]);
+
+useEffect(() => {
+  return () => {
+    if (agoraClientRef.current) {
+      agoraClientRef.current.leave().catch((error) => {
+        console.error("Agora cleanup error:", error);
+      });
+    }
+
+    if (agoraMicrophoneTrackRef.current) {
+      agoraMicrophoneTrackRef.current.stop();
+      agoraMicrophoneTrackRef.current.close();
+      agoraMicrophoneTrackRef.current = null;
+    }
+  };
+}, []);
 
 const questions = [
   {
@@ -311,6 +338,147 @@ if (screen === "interview") {
     "0"
   )}:${String(seconds).padStart(2, "0")}`;
 
+  const connectToAgora = async () => {
+  try {
+    setIsVoiceConnecting(true);
+    setVoiceError("");
+
+    const channelName = `eva-${Date.now()}`;
+
+    // 1. Get RTC token from our backend
+    const tokenResponse = await fetch(
+      "http://127.0.0.1:8000/agora/token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          channel_name: channelName,
+          uid: 2000,
+        }),
+      }
+    );
+
+    if (!tokenResponse.ok) {
+      throw new Error("Failed to get Agora token");
+    }
+
+    const tokenData = await tokenResponse.json();
+
+    // 2. Start the EVA Conversational AI agent
+    const agentResponse = await fetch(
+      "http://127.0.0.1:8000/agora/start",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          channel_name: channelName,
+        }),
+      }
+    );
+
+    if (!agentResponse.ok) {
+      throw new Error("Failed to start EVA Agora agent");
+    }
+
+    const agentData = await agentResponse.json();
+
+    setAgoraAgentId(agentData.agora?.agent_id || null);
+
+    // 3. Create Agora RTC client
+    const client = AgoraRTC.createClient({
+      mode: "rtc",
+      codec: "vp8",
+    });
+
+    agoraClientRef.current = client;
+    setAgoraClient(client);
+
+    // 4. Listen for EVA's audio
+    client.on("user-published", async (user, mediaType) => {
+      await client.subscribe(user, mediaType);
+
+      if (mediaType === "audio") {
+        const remoteAudioTrack = user.audioTrack;
+
+        if (remoteAudioTrack) {
+          remoteAudioTrack.play();
+        }
+      }
+    });
+
+    // 5. Join the Agora channel
+    await client.join(
+      tokenData.app_id,
+      channelName,
+      tokenData.token,
+      tokenData.uid
+    );
+
+    // 6. Publish the candidate microphone
+    const microphoneTrack =
+  await AgoraRTC.createMicrophoneAudioTrack();
+
+agoraMicrophoneTrackRef.current = microphoneTrack;
+
+await client.publish([microphoneTrack]);
+
+    setAgoraJoined(true);
+    setIsVoiceConnected(true);
+
+    console.log("EVA voice connected:", {
+      channelName,
+      agentId: agentData.agora?.agent_id,
+    });
+  } catch (error) {
+    console.error("Agora connection error:", error);
+    setVoiceError(error.message || "Could not connect to EVA voice.");
+    setIsVoiceConnected(false);
+  } finally {
+    setIsVoiceConnecting(false);
+  }
+};
+
+const disconnectFromAgora = async () => {
+  try {
+    setIsVoiceConnected(false);
+    setAgoraJoined(false);
+
+    // Stop the microphone
+    if (agoraMicrophoneTrackRef.current) {
+      agoraMicrophoneTrackRef.current.stop();
+      agoraMicrophoneTrackRef.current.close();
+      agoraMicrophoneTrackRef.current = null;
+    }
+
+    // Leave the Agora RTC channel
+    if (agoraClientRef.current) {
+      await agoraClientRef.current.leave();
+      agoraClientRef.current = null;
+    }
+
+    // Stop the EVA AI agent
+    if (agoraAgentId) {
+      await fetch(
+        `http://127.0.0.1:8000/agora/stop/${agoraAgentId}`,
+        {
+          method: "POST",
+        }
+      );
+    }
+
+    setAgoraClient(null);
+    setAgoraAgentId(null);
+
+    console.log("EVA voice disconnected.");
+  } catch (error) {
+    console.error("Agora disconnect error:", error);
+  }
+};
+
   const handleSubmit = async () => {
 
     if (answer.trim() === "") {
@@ -423,7 +591,7 @@ if (screen === "interview") {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
 
     if (
       questionIndex <
@@ -440,13 +608,16 @@ if (screen === "interview") {
 
     } else {
 
-      setScreen("results");
+  await disconnectFromAgora();
 
-      setQuestionIndex(0);
-      setAnswer("");
-      setSubmitted(false);
-      setIsRecording(false);
-    }
+  setScreen("results");
+
+  setQuestionIndex(0);
+  setAnswer("");
+  setSubmitted(false);
+  setIsRecording(false);
+
+}
   };
 
   const toggleRecording = () => {
@@ -607,16 +778,37 @@ if (screen === "interview") {
 
           <div className="answer-area">
 
-            <textarea
-              value={answer}
-              onChange={(e) =>
-                setAnswer(e.target.value)
-              }
-              placeholder="Type your answer here..."
-              disabled={submitted}
-            />
+  <div className="voice-interview-control">
+    <button
+      type="button"
+      className="primary-button"
+      onClick={connectToAgora}
+      disabled={isVoiceConnecting || isVoiceConnected}
+    >
+      {isVoiceConnecting
+        ? "Connecting to EVA..."
+        : isVoiceConnected
+        ? "🎙️ EVA Voice Connected"
+        : "🎤 Start Voice Interview"}
+    </button>
 
-            <div className="voice-controls">
+    {voiceError && (
+      <p className="voice-error">
+        {voiceError}
+      </p>
+    )}
+  </div>
+
+  <textarea
+    value={answer}
+    onChange={(e) =>
+      setAnswer(e.target.value)
+    }
+    placeholder="Type your answer here..."
+    disabled={submitted}
+  />
+
+  <div className="voice-controls">
 
               <button
                 type="button"

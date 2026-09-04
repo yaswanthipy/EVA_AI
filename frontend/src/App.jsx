@@ -16,6 +16,8 @@ const [voiceError, setVoiceError] = useState("");
 
 const [questionIndex, setQuestionIndex] = useState(0);
 const [answer, setAnswer] = useState("");
+const [adaptiveQuestion, setAdaptiveQuestion] = useState(null);
+const [adaptiveInterviewer, setAdaptiveInterviewer] = useState(null);
 const [submitted, setSubmitted] = useState(false);
 
 const [jobRole, setJobRole] = useState("Software Engineer");
@@ -68,30 +70,35 @@ useEffect(() => {
 
 const questions = [
   {
+    id: 1,
     interviewer: "HR Interviewer",
     role: "Behavioral & Communication",
     avatar: "👩‍💼",
     question: "Tell me about yourself and your background."
   },
   {
+    id: 2,
     interviewer: "HR Interviewer",
     role: "Behavioral & Communication",
     avatar: "👩‍💼",
     question: "What is one challenge you faced and how did you overcome it?"
   },
   {
+    id: 3,
     interviewer: "Technical Interviewer",
     role: "Technical Knowledge",
     avatar: "👨‍💻",
     question: "What is the difference between an array and a linked list?"
   },
   {
+    id: 4,
     interviewer: "Technical Interviewer",
     role: "Problem Solving",
     avatar: "👨‍💻",
     question: "How would you approach solving a problem you have never seen before?"
   },
   {
+    id: 5,
     interviewer: "Product Manager",
     role: "Product Thinking",
     avatar: "👨‍💼",
@@ -114,7 +121,8 @@ if (interviewFocus === "Technical") {
   );
 }
 
-const currentQuestion = filteredQuestions[questionIndex];
+const currentQuestion =
+  adaptiveQuestion || filteredQuestions[questionIndex];
 
 if (screen === "setup") {
   return (
@@ -503,6 +511,12 @@ const disconnectFromAgora = async () => {
       return updatedAnswers;
     });
 
+console.log("SENDING TO BACKEND:", {
+  question_id: currentQuestion.id,
+  question: currentQuestion.question,
+  answer: answer.trim(),
+});
+
     try {
 
       // Send answer to backend
@@ -516,17 +530,32 @@ const disconnectFromAgora = async () => {
           },
 
           body: JSON.stringify({
-            question_id: questionIndex,
-            answer: answer.trim(),
-          }),
+  question_id: currentQuestion.id,
+  answer: answer.trim(),
+  current_level:
+    currentQuestion.interviewer === "HR Interviewer"
+      ? "HR"
+      : currentQuestion.interviewer === "Technical Interviewer"
+      ? "TECH"
+      : "PRODUCT",
+}),
         }
       );
 
-      if (!answerResponse.ok) {
-        throw new Error(
-          "Failed to submit answer"
-        );
-      }
+
+
+      const interviewResult = await answerResponse.json();
+
+console.log(
+  "ADAPTIVE INTERVIEW RESPONSE:",
+  interviewResult
+);
+
+if (!answerResponse.ok) {
+  throw new Error(
+    JSON.stringify(interviewResult)
+  );
+}
 
       // Evaluate answer
       const evaluationResponse = await fetch(
@@ -539,7 +568,7 @@ const disconnectFromAgora = async () => {
           },
 
           body: JSON.stringify({
-            question_id: questionIndex,
+            question_id: currentQuestion.id,
             question: currentQuestion.question,
             answer: answer.trim(),
           }),

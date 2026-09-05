@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from interview import router as interview_router
 from evaluator import evaluate_answer as evaluate_answer_logic
-from agora import start_agora_agent, stop_agora_agent
+from agora import send_agora_instruction, start_agora_agent, stop_agora_agent
 from agora_token_builder import RtcTokenBuilder
 
 app = FastAPI(
@@ -23,7 +23,10 @@ app.include_router(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -101,6 +104,24 @@ def stop_agora_agent_endpoint(agent_id: str):
     return {
         "status": "success",
         "agent_id": agent_id,
+        "agora": result
+    }
+
+class AgoraThinkRequest(BaseModel):
+    agent_id: str
+    instruction: str
+
+
+@app.post("/agora/think")
+def agora_think(data: AgoraThinkRequest):
+    result = send_agora_instruction(
+        data.agent_id,
+        data.instruction
+    )
+
+    return {
+        "status": "success",
+        "agent_id": data.agent_id,
         "agora": result
     }
 

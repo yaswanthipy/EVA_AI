@@ -18,6 +18,9 @@ const [questionIndex, setQuestionIndex] = useState(0);
 const [answer, setAnswer] = useState("");
 const [adaptiveQuestion, setAdaptiveQuestion] = useState(null);
 const [adaptiveInterviewer, setAdaptiveInterviewer] = useState(null);
+
+const [pendingAdaptiveQuestion, setPendingAdaptiveQuestion] = useState(null);
+const [pendingAdaptiveInterviewer, setPendingAdaptiveInterviewer] = useState(null);
 const [submitted, setSubmitted] = useState(false);
 
 const [jobRole, setJobRole] = useState("Software Engineer");
@@ -122,7 +125,8 @@ if (interviewFocus === "Technical") {
 }
 
 const currentQuestion =
-  adaptiveQuestion || filteredQuestions[questionIndex];
+  adaptiveQuestion ?? filteredQuestions[questionIndex];
+  console.log("CURRENT QUESTION DISPLAYED:", currentQuestion);
 
 if (screen === "setup") {
   return (
@@ -452,6 +456,14 @@ await client.publish([microphoneTrack]);
 
 const disconnectFromAgora = async () => {
   try {
+
+    // Stop browser speech recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+
+    setIsRecording(false);
     setIsVoiceConnected(false);
     setAgoraJoined(false);
 
@@ -504,12 +516,8 @@ const disconnectFromAgora = async () => {
     };
 
     setAnswers((previousAnswers) => {
-      const updatedAnswers = [...previousAnswers];
-
-      updatedAnswers[questionIndex] = newAnswer;
-
-      return updatedAnswers;
-    });
+  return [...previousAnswers, newAnswer];
+});
 
 console.log("SENDING TO BACKEND:", {
   question_id: currentQuestion.id,
@@ -530,7 +538,8 @@ console.log("SENDING TO BACKEND:", {
           },
 
           body: JSON.stringify({
-  question_id: currentQuestion.id,
+            question_id: currentQuestion.id,
+          question: currentQuestion.question,
   answer: answer.trim(),
   current_level:
     currentQuestion.interviewer === "HR Interviewer"
@@ -550,6 +559,25 @@ console.log(
   "ADAPTIVE INTERVIEW RESPONSE:",
   interviewResult
 );
+
+if (interviewResult.next_question) {
+  console.log(
+    "ADAPTIVE QUESTION RECEIVED:",
+    interviewResult.next_question
+  );
+
+  setPendingAdaptiveQuestion(
+    interviewResult.next_question
+  );
+} else {
+  console.log(
+    "NO ADAPTIVE QUESTION RECEIVED"
+  );
+}
+
+if (interviewResult.next_interviewer) {
+  setPendingAdaptiveInterviewer(interviewResult.next_interviewer);
+}
 
 if (!answerResponse.ok) {
   throw new Error(
@@ -590,16 +618,8 @@ if (!answerResponse.ok) {
       );
 
       setEvaluations((previousEvaluations) => {
-
-        const updatedEvaluations = [
-          ...previousEvaluations,
-        ];
-
-        updatedEvaluations[questionIndex] =
-          evaluation;
-
-        return updatedEvaluations;
-      });
+  return [...previousEvaluations, evaluation];
+});
 
       setSubmitted(true);
 
@@ -621,6 +641,65 @@ if (!answerResponse.ok) {
   };
 
   const handleNext = async () => {
+    console.log(
+  "PENDING ADAPTIVE QUESTION:",
+  pendingAdaptiveQuestion
+);
+
+    if (pendingAdaptiveQuestion) {
+
+      setAdaptiveQuestion(pendingAdaptiveQuestion);
+
+      if (pendingAdaptiveQuestion) {
+
+  // Tell the active EVA voice agent to ask the same question
+  if (agoraAgentId) {
+    try {
+      await fetch(
+        "http://127.0.0.1:8000/agora/think",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            agent_id: agoraAgentId,
+            instruction: `Ask the candidate this exact interview question: "${pendingAdaptiveQuestion.question}"`,
+          }),
+        }
+      );
+
+      console.log(
+        "EVA voice instructed:",
+        pendingAdaptiveQuestion.question
+      );
+
+    } catch (error) {
+      console.error(
+        "Failed to send question to EVA voice:",
+        error
+      );
+    }
+  }
+
+  setAdaptiveQuestion(pendingAdaptiveQuestion);
+
+  if (pendingAdaptiveInterviewer) {
+    setAdaptiveInterviewer(
+      pendingAdaptiveInterviewer
+    );
+  }
+
+  setPendingAdaptiveQuestion(null);
+  setPendingAdaptiveInterviewer(null);
+
+  setAnswer("");
+  setSubmitted(false);
+  setIsRecording(false);
+
+  return;
+}
+    }
 
     if (
       questionIndex <
@@ -883,19 +962,13 @@ if (!answerResponse.ok) {
                 </div>
 
                 <div className="evaluation-score">
-                  Score:{" "}
-                  {evaluations[
-                    questionIndex
-                  ]?.score ?? "--"}
-                  /10
-                </div>
+  Score: {evaluations[evaluations.length - 1]?.score ?? "--"}/10
+</div>
 
-                <p>
-                  {evaluations[
-                    questionIndex
-                  ]?.feedback ||
-                    "EVA has evaluated your response."}
-                </p>
+<p>
+  {evaluations[evaluations.length - 1]?.feedback ||
+    "EVA has evaluated your response."}
+</p>
 
                 <button
                   className="primary-button"

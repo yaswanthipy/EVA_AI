@@ -68,6 +68,52 @@ def start_agora_agent(channel_name: str, agent_token: str):
 
     return response.json()
 
+def send_agora_instruction(agent_id: str, instruction: str):
+
+    if not AGORA_CUSTOMER_ID:
+        raise ValueError("AGORA_CUSTOMER_ID is missing")
+
+    if not AGORA_CUSTOMER_SECRET:
+        raise ValueError("AGORA_CUSTOMER_SECRET is missing")
+
+    credentials = f"{AGORA_CUSTOMER_ID}:{AGORA_CUSTOMER_SECRET}"
+
+    encoded_credentials = base64.b64encode(
+        credentials.encode("utf-8")
+    ).decode("utf-8")
+
+    url = (
+        "https://api.agora.io/api/conversational-ai-agent/v2/"
+        f"projects/{AGORA_APP_ID}/agents/{agent_id}/think"
+    )
+
+    headers = {
+        "Authorization": f"Basic {encoded_credentials}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "text": instruction,
+        "on_listening_action": "inject",
+        "on_thinking_action": "interrupt",
+        "on_speaking_action": "interrupt",
+        "interruptable": True
+}
+    
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=30,
+    )
+
+    if not response.ok:
+        raise RuntimeError(
+            f"Agora API error {response.status_code}: {response.text}"
+        )
+
+    return response.json()
 
 def stop_agora_agent(agent_id: str):
     if not AGORA_CUSTOMER_ID:

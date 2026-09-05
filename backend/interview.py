@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter
 from google import genai
 from dotenv import load_dotenv
@@ -6,7 +7,7 @@ from evaluator import evaluate_answer
 
 load_dotenv()
 
-client = genai.Client()
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 router = APIRouter()
 
